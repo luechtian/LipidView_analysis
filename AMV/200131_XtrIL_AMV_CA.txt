@@ -1,0 +1,5 @@
+C:\LipidView Data\LV Results\200131_XtrIL_AMV_CA.txt	Peak Intensities											
+Sample Name						Sample 1	Sample 2	Sample 3	Sample 4	Kon A	Kon B	Kon C
+Sample ID	PIS m/z	Polarity	View Type	LipidName	(ScanName)	2	3	4	5	6	7	8
+446.4	77.00	Positive	Confirmed and Common Results	Chol	()	30724625	16071750	35192875	34937125	2477500	18795250	34101000
+452.4	77.00	Positive	Confirmed and Common Results	IS D6-Chol	()	15831750	8866625	16906125	14732250	25053625	32932125	32824625

@@ -1,0 +1,138 @@
+---
+title: "Tidy lipidomics data"
+output:
+  html_document:
+    df_print: paged
+params:
+  input_folder: AMV
+  output_folder: ./
+  metadata_name: metadata
+---
+
+## Load packages
+
+```{r tidyverse and janitor, message=FALSE}
+library(tidyverse)
+library(janitor)
+```
+
+## Import data
+
+```{r Import meta and LV data, message=FALSE, warning=FALSE}
+# Paths
+input_folder <- params$input_folder
+output_folder <- params$output_folder
+metadata_name <- params$metadata_name
+
+# Import meta data
+meta_data <- read.csv(list.files(path = input_folder, pattern = metadata_name, full.names = T)) %>% 
+  clean_names()
+
+# Import LipidView data
+files <- list.files(path = input_folder, pattern = ".txt", full.names = TRUE) 
+
+# Parse lipid class from file names
+splitted_files <- str_split(files, pattern = "_", simplify = TRUE)
+names(files) <- str_replace_all(splitted_files[,ncol(splitted_files)],".txt", "")
+
+raw_data <- map_df(files, read_tsv, skip = 1, .id = "class") %>% 
+  clean_names()
+```
+
+## Tidy LipidView data
+
+```{r clean and prepare metadata}
+# Extract sample input [ul] from meta data
+sample_input <- meta_data %>%
+  filter(grepl("sample input", class)) %>% 
+  select(-class, -rf_values, -x) %>%
+  pivot_longer(everything(),
+               names_to = "samples",
+               values_to = "sample_input")
+
+
+# Extract internal standard concentrations [pmol]
+# and response factors (rf-values) from meta data
+standard_input <- meta_data %>%
+  filter(!grepl("sample input", class)) %>% 
+  select(-x) %>%
+  pivot_longer(
+    cols = c(-class, -rf_values),
+    names_to = "samples",
+    values_to = "standard_input")
+
+```
+
+```{r clean and prepare LipidView files}
+# Tidy up LipidView-files and join LipidView data with meta data
+raw_data <- raw_data %>%
+  filter(!grepl("Sample ID", sample_name)) %>% 
+  select(-sample_name, -x2, -x3, -x4) %>% 
+  rename("species" = x5,
+         "scan_name"= x6) %>% 
+  pivot_longer(
+    cols = c(-species, -class, -scan_name),
+    names_to = "samples",
+    values_to = "intensity") %>% 
+  mutate(species = str_remove(species, "\\+NH4"))
+
+
+# Seperate internal standards with samples and return the mean of IS-intensities to the rawdata
+is_data <- raw_data %>% 
+  filter(str_detect(species, "IS"),
+         class != "TAG") %>% 
+  group_by(class, samples) %>% 
+  summarise(is_intensity = mean(intensity))
+
+# Special case for TAG
+is_tag_data <- raw_data %>% 
+  filter(str_detect(species, "IS"),
+         species == "IS D5-TAG 17:0/17:1/17:0",
+         str_detect(scan_name, "17:0")) %>% 
+  select(class, samples, is_intensity = intensity)
+
+is_data <- full_join(is_data, is_tag_data, by = c("class", "samples", "is_intensity"))
+```
+
+```{r bring all data together}
+# 
+tidy_data <- raw_data %>% 
+  select(-scan_name) %>% 
+  filter(!str_detect(species, "IS")) %>% 
+  left_join(is_data, by = c("class", "samples")) %>% 
+  left_join(standard_input, by = c("class", "samples")) %>% 
+  left_join(sample_input, by = "samples")
+```
+
+### Special cases
+
+Before the script can proceed with number crunching, there are some special cases to wdeal with. These cases are classes with NA in rf_values (e.g. Cholesterol and Ergosterol), DAG and TAG.
+ 
+- Cholesterol & Ergosterol: Calculate the rf-value with kon_b and kon_c
+- DAG: Sum DAG-species with the same fatty acid sum, but different fatty acid composition. 
+       Better way is to calculate the possible sum of detected fatty acids in neutral loss-scans.
+- TAG: Same as DAG, but with 3 Fatty Acids
+
+But for now, simple sums of the same DAG- and TAG-species (FA_sum) are sufficient.
+
+```{r Calc missing rf-values}
+tidy_data %>%
+  filter(grepl("kon", samples) & is.na(rf_values)) %>% 
+  mutate(pmol = standard_input/is_intensity * intensity)
+  
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

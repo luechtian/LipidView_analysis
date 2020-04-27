@@ -1,0 +1,29 @@
+C:\LipidView Data\LV Results\200131_XtrIL_AMV_Pos_PS_NL_QTRAP_PI_37_4_Controls_TM.txt	Peak Intensities
+Sample Name						Sample 1	Sample 2	Sample 3	Sample 4	Kon A
+Sample ID	PIS m/z	Polarity	View Type	LipidName	(ScanName)	1	2	3	4	5
+890.6	277.00	Positive	Confirmed and Common Results	IS PI 37:4	(PI)	2862625	2425125	2603000	2014125	2648375
+826.5	277.00	Positive	Confirmed and Common Results	PI 32:1	(PI)	150750	55125	63500	43875	9375
+828.6	277.00	Positive	Confirmed and Common Results	PI 32:0	(PI)	64000	27625	35125	37875	11375
+852.6	277.00	Positive	Confirmed and Common Results	PI 34:2	(PI)	310625	159000	172125	152125	6000
+854.6	277.00	Positive	Confirmed and Common Results	PI 34:1	(PI)	671750	291500	470750	294375	0
+856.6	277.00	Positive	Confirmed and Common Results	PI 34:0	(PI)	96250	56125	77750	55375	7500
+864.6	277.00	Positive	Confirmed and Common Results	PI O-36:3	(PI)	23500	19000	29000	16375	0
+866.6	277.00	Positive	Confirmed and Common Results	PI O-36:2	(PI)	64750	48250	73125	51250	7375
+868.6	277.00	Positive	Confirmed and Common Results	PI O-36:1	(PI)	60625	49125	47625	46375	0
+876.6	277.00	Positive	Confirmed and Common Results	PI 36:4	(PI)	206500	173625	195750	161500	15125
+878.6	277.00	Positive	Confirmed and Common Results	PI 36:3	(PI)	266250	193250	236875	192875	6500
+880.6	277.00	Positive	Confirmed and Common Results	PI 36:2	(PI)	914625	629750	722250	685500	0
+882.6	277.00	Positive	Confirmed and Common Results	PI 36:1	(PI)	692000	387250	452875	460625	0
+892.6	277.00	Positive	Confirmed and Common Results	PI O-38:3	(PI)	360125	335875	356125	306125	264750
+894.6	277.00	Positive	Confirmed and Common Results	PI O-38:2	(PI)	54750	41500	68125	59500	8500
+902.6	277.00	Positive	Confirmed and Common Results	PI 38:5	(PI)	520250	446500	506625	687625	0
+904.6	277.00	Positive	Confirmed and Common Results	PI 38:4	(PI)	1904375	1569125	1693375	1801125	9500
+906.6	277.00	Positive	Confirmed and Common Results	PI 38:3	(PI)	1251375	1037750	1261375	1125125	0
+908.6	277.00	Positive	Confirmed and Common Results	PI 38:2	(PI)	342500	304125	372750	336750	0
+918.6	277.00	Positive	Confirmed and Common Results	PI O-40:4	(PI)	59375	51500	95375	81000	9375
+920.6	277.00	Positive	Confirmed and Common Results	PI O-40:3	(PI)	68125	64375	98625	75125	0
+928.6	277.00	Positive	Confirmed and Common Results	PI 40:6	(PI)	157500	173000	185000	167750	0
+930.6	277.00	Positive	Confirmed and Common Results	PI 40:5	(PI)	228125	206125	175375	208125	0
+932.6	277.00	Positive	Confirmed and Common Results	PI 40:4	(PI)	143750	136125	166500	175625	0
+934.6	277.00	Positive	Confirmed and Common Results	PI 40:3	(PI)	64250	42000	110000	96625	8125
+936.6	277.00	Positive	Confirmed and Common Results	PI 40:2	(PI)	15125	16875	30625	20375	6250

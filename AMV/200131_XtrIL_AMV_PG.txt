@@ -1,0 +1,31 @@
+C:\LipidView Data\LV Results\200131_XtrIL_AMV_Pos_PS_NL_QTRAP_PG_Controls_TM.txt	Peak Intensities
+Sample Name						Sample 1	Sample 2	Sample 3	Sample 4	Kon A
+Sample ID	PIS m/z	Polarity	View Type	LipidName	(ScanName)	1	2	3	4	5
+680.4	189.00	Positive	Confirmed and Common Results	IS PG 28:2	(-PG (NH4))	4587803.6905	3705376.6491	4455250	3317250	1615577.1706
+848.6	189.00	Positive	Confirmed and Common Results	IS PG 40:2	(-PG (NH4))	4596660.5631	3710000	4515849.1255	3910000	1789875
+904.7	189.00	Positive	Confirmed and Common Results	IS PG 44:2	(-PG (NH4))	2550875	2129500	2084625	2125750	966250
+710.5	189.00	Positive	Confirmed and Common Results	PG 30:1	(-PG (NH4))	14703.1229	9710.0005	8708.9649	8389.907	15442.9477
+712.6	189.00	Positive	Confirmed and Common Results	PG 30:0	(-PG (NH4))	32230.7622	26511.5885	38875	29307.544	12495.5703
+724.7	189.00	Positive	Confirmed and Common Results	PG O-32:1	(-PG (NH4))	8810.7391	0	7125	18375	8125
+726.7	189.00	Positive	Confirmed and Common Results	PG O-32:0	(-PG (NH4))	12751.6538	14125	0	10139.1919	11714.2962
+736.5	189.00	Positive	Confirmed and Common Results	PG 32:2	(-PG (NH4))	16095.2401	17125	23240.643	26000	0
+738.5	189.00	Positive	Confirmed and Common Results	PG 32:1	(-PG (NH4))	42078.8845	40375	41472.1666	65671.5629	6760.0092
+740.6	189.00	Positive	Confirmed and Common Results	PG 32:0	(-PG (NH4))	65398.537	50251.4452	36815.8051	69207.4716	16125
+750.6	189.00	Positive	Confirmed and Common Results	PG O-34:2	(-PG (NH4))	22792.2896	19655.9393	17320.9217	22125	17687.9617
+752.6	189.00	Positive	Confirmed and Common Results	PG O-34:1	(-PG (NH4))	23638.9649	19625	21441.4807	27328.6044	0
+754.5	189.00	Positive	Confirmed and Common Results	PG O-34:0	(-PG (NH4))	16355.5759	13875	17500	9111.2891	10000
+762.5	189.00	Positive	Confirmed and Common Results	PG 34:3	(-PG (NH4))	28421.1186	16582.6611	16940.6879	10616.1549	2582.259
+764.6	189.00	Positive	Confirmed and Common Results	PG 34:2	(-PG (NH4))	95511.7956	46315.6142	61500	89960.1424	11187.1288
+766.6	189.00	Positive	Confirmed and Common Results	PG 34:1	(-PG (NH4))	703935.3095	496935.078	631086.57	729084.0824	19375
+768.6	189.00	Positive	Confirmed and Common Results	PG 34:0	(-PG (NH4))	0	13216.7962	7253.5502	31049.8694	6986.5729
+778.7	189.00	Positive	Confirmed and Common Results	PG O-36:2	(-PG (NH4))	26000	17922.5942	35875	43996.166	15250
+780.7	189.00	Positive	Confirmed and Common Results	PG O-36:1	(-PG (NH4))	20791.5708	21938.3958	21637.4288	51416.34	0
+788.6	189.00	Positive	Confirmed and Common Results	PG 36:4	(-PG (NH4))	13703.2197	17625	14875	22875	0
+790.6	189.00	Positive	Confirmed and Common Results	PG 36:3	(-PG (NH4))	35461.093	20625	29188.0554	51698.6593	7477.0629
+792.6	189.00	Positive	Confirmed and Common Results	PG 36:2	(-PG (NH4))	118580.9865	85777.2078	162630.5078	173595.2135	5757.1184
+794.6	189.00	Positive	Confirmed and Common Results	PG 36:1	(-PG (NH4))	155066.1071	128304.4097	226721.96	278308.9655	6123.0443
+812.6	189.00	Positive	Confirmed and Common Results	PG 38:6	(-PG (NH4))	0	4140.3964	0	13125	9596.9451
+814.6	189.00	Positive	Confirmed and Common Results	PG 38:5	(-PG (NH4))	6936.4479	3957.9874	11750	8024.6421	0
+816.6	189.00	Positive	Confirmed and Common Results	PG 38:4	(-PG (NH4))	14010.3393	8190.998	19808.4215	27835.141	0
+818.6	189.00	Positive	Confirmed and Common Results	PG 38:3	(-PG (NH4))	19287.3757	10629.4509	15575.0907	20321.2176	0
+820.6	189.00	Positive	Confirmed and Common Results	PG 38:2	(-PG (NH4))	9011.9716	13752.957	13614.1161	12595.1444	0
