@@ -8,15 +8,18 @@ params:
   output_folder: ./
   metadata_name: metadata
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
-# Load packages
+# Load packages and functions
 
 ```{r Tidyverse and janitor, message=FALSE}
 library(tidyverse)
 library(janitor)
 library(openxlsx)
+library(ggpubr)
+
+source("LipidView_analysis_funs.R")
 ```
 
 # Import data
@@ -28,7 +31,9 @@ output_folder <- params$output_folder
 metadata_name <- params$metadata_name
 
 # Import meta data
-meta_data <- read.csv(list.files(path = input_folder, pattern = metadata_name, full.names = T)) %>% 
+meta_data <- read.csv(list.files(path = input_folder,
+                                 pattern = metadata_name,
+                                 full.names = T)) %>%
   clean_names()
 
 # List all (LipidView) txt.files in designated input_folder
@@ -36,10 +41,10 @@ files <- list.files(path = input_folder, pattern = ".txt", full.names = TRUE)
 
 # Parse lipid class from file names
 splitted_files <- str_split(files, pattern = "_", simplify = TRUE)
-names(files) <- str_remove_all(splitted_files[, ncol(splitted_files)],".txt")
+names(files) <- str_remove_all(splitted_files[, ncol(splitted_files)], ".txt")
 
 # Read and merge all LipidView txt.files
-raw_df <- map_df(files, read_tsv, skip = 1, .id = "class") %>% 
+raw_df <- map_df(files, read_tsv, skip = 1, .id = "class") %>%
   clean_names()
 ```
 
@@ -51,29 +56,31 @@ raw_df <- map_df(files, read_tsv, skip = 1, .id = "class") %>%
 # General clean up of the LipidView dataframe:
 ## Get rid off unnecessary columns and strings, rename columns
 raw_data <- raw_df %>%
-  filter(!str_detect(sample_name, "Sample ID")) %>% 
-  select(-sample_name, -x2, -x3, -x4, -x6) %>% 
-  rename("species" = x5) %>% 
+  filter(!str_detect(sample_name, "Sample ID")) %>%
+  select(-sample_name, -x2, -x3, -x4, -x6) %>%
+  rename("species" = x5) %>%
   pivot_longer(
     cols = c(-species, -class),
     names_to = "samples",
     values_to = "intensity") %>%
   mutate(species = str_remove_all(species, "\\+NH4"))
 
-# Extract the intensities of internal standards and return the mean of IS-intensities to the rawdata
-is_data <- raw_data %>% 
+# Extract the intensities of internal standards and
+# return the mean of IS-intensities to the rawdata
+is_data <- raw_data %>%
   filter(str_detect(species, "IS"),
-         class != "TAG") %>% 
-  group_by(class, samples) %>% 
+         class != "TAG") %>%
+  group_by(class, samples) %>%
   summarise(is_intensity = mean(intensity))
 
-# Special case for TAG
-# Because "IS D5-TAG 17:0/17:1/17:0" is the only internal standard for TAG quantification in use, it is filtered by hardcode for now.
-is_data <- raw_data %>% 
+# Special case for TAG:
+# Because "IS D5-TAG 17:0/17:1/17:0" is the only ISTD for
+# TAG quantification in use, it is filtered by hardcode for now.
+is_data <- raw_data %>%
   filter(str_detect(species, "IS"),
-         species == "IS D5-TAG 17:0/17:1/17:0") %>% 
-  group_by(class, samples) %>% 
-  summarise(is_intensity = sum(intensity)) %>% 
+         species == "IS D5-TAG 17:0/17:1/17:0") %>%
+  group_by(class, samples) %>%
+  summarise(is_intensity = sum(intensity)) %>%
   full_join(is_data, by = c("class", "samples", "is_intensity"))
 ```
 
@@ -82,7 +89,7 @@ is_data <- raw_data %>%
 ```{r Clean and prepare metadata}
 # Extract sample input [ul] from meta data
 sample_input <- meta_data %>%
-  filter(class == "sample input") %>% 
+  filter(class == "sample input") %>%
   select(-class, -rf_values, -x) %>%
   pivot_longer(everything(),
                names_to = "samples",
@@ -91,7 +98,7 @@ sample_input <- meta_data %>%
 # Extract internal standard concentrations [pmol]
 # and response factors (rf-values) from meta data
 standard_input <- meta_data %>%
-  filter(class != "sample input") %>% 
+  filter(class != "sample input") %>%
   select(-x) %>%
   pivot_longer(
     cols = c(-class, -rf_values),
@@ -102,12 +109,16 @@ standard_input <- meta_data %>%
 ## Join them all
 
 ```{r Bring all data together, message=FALSE, warning=FALSE}
-# Join data and get rid off redundant columns (scan_name) and observations (IS rows)
-joined_data <- raw_data %>% 
-  left_join(is_data, by = c("class", "samples")) %>% 
-  left_join(standard_input, by = c("class", "samples")) %>% 
-  left_join(sample_input, by = "samples") %>% 
+# Join data and get rid off redundant cols (scan_name)
+# and observations (IS rows)
+joined_data <- raw_data %>%
+  left_join(is_data, by = c("class", "samples")) %>%
+  left_join(standard_input, by = c("class", "samples")) %>%
+  left_join(sample_input, by = "samples") %>%
   filter(!str_detect(species, "IS"))
+
+#To preserve order of species after summarise-function
+joined_data$species <- fct_inorder(joined_data$species, ordered = NA)
 ```
 
 ## Special cases
@@ -125,31 +136,39 @@ Tasks:
 #### Classes without predetermined rf_values
 
 ```{r Calc missing rf-values, message=FALSE, warning=FALSE}
-if (any(is.na(joined_data$rf_values)) == TRUE){
-  
+if (any(is.na(joined_data$rf_values)) == TRUE) {
+
   # Calculate pmol-values of kon_a, _b and _c
   missing_rf <- joined_data %>%
-    filter(str_detect(samples, "kon") & is.na(rf_values)) %>% 
-    mutate(pmol = (standard_input/is_intensity * intensity))
-  
+    filter(str_detect(samples, "kon") & is.na(rf_values)) %>%
+    mutate(pmol = (standard_input / is_intensity * intensity))
+
   # create kon_a variable for better reading
-  kon_a <- missing_rf %>% 
-    filter(samples == "kon_a") %>%  
+  kon_a <- missing_rf %>%
+    filter(samples == "kon_a") %>%
     select(class, species, kon_a_pmol = pmol)
 
-  # add new column with pmol-values of kon_a for blank substraction and 
-  missing_rf <- left_join(missing_rf, kon_a, by = c("class", "species")) %>% 
-    mutate(rf_values = sample_input/(pmol - kon_a_pmol)) %>% 
-    filter(!str_detect(samples, "kon_a")) %>% 
-    group_by(class, species) %>% 
+  # add new column with pmol-values of kon_a for blank substraction and
+  missing_rf <- left_join(missing_rf, kon_a, by = c("class", "species")) %>%
+    mutate(rf_values = sample_input / (pmol - kon_a_pmol)) %>%
+    filter(!str_detect(samples, "kon_a")) %>%
+    group_by(class, species) %>%
     summarise(rf_values = mean(rf_values))
-  
+
   # join and unite the calculated rf-values and get rid off kon_b and c.
-  ##unite()-function merges 2 columns and returns characters. Therefore remove NA-strings and convert back to numeric)  
-   joined_data <- left_join(joined_data, missing_rf, by = c("class", "species")) %>% 
-    unite("rf_values","rf_values.y","rf_values.x", sep = "", remove = TRUE, na.rm = TRUE) %>% 
+  # unite()-function merges 2 columns and returns characters.
+  # Therefore remove NA-strings and convert back to numeric)
+  joined_data <- left_join(joined_data,
+                           missing_rf,
+                           by = c("class", "species")) %>%
+    unite("rf_values",
+          "rf_values.y",
+          "rf_values.x",
+          sep = "",
+          remove = TRUE,
+          na.rm = TRUE) %>%
     mutate(rf_values = str_remove_all(rf_values, "NA"),
-           rf_values = as.numeric(rf_values)) %>% 
+           rf_values = as.numeric(rf_values)) %>%
     filter(!(samples %in% c("kon_b", "kon_c")))
 
 }
@@ -158,10 +177,10 @@ if (any(is.na(joined_data$rf_values)) == TRUE){
 #### Classes with identical species from different scans
 
 ```{r Sum identical species}
-data <- joined_data %>% 
-  group_by(class, species, samples, is_intensity, rf_values, standard_input, sample_input) %>% 
-  summarise(intensity = sum(intensity)) %>% 
-  ungroup
+data <- joined_data %>%
+  group_by_at(vars(-intensity)) %>%
+  summarise(intensity = sum(intensity)) %>%
+  ungroup()
 ```
 
 # Number crunching
@@ -169,8 +188,8 @@ data <- joined_data %>%
 ## Apply the Response factor (rf-values) to endogenous intensities
 
 ```{r Apply the rf-value}
-data <- data %>% 
-  mutate(intensity = intensity * rf_values) %>% 
+data <- data %>%
+  mutate(intensity = intensity * rf_values) %>%
   select(-rf_values)
 ```
 
@@ -179,8 +198,8 @@ data <- data %>%
 #### Convert intensities to picomoles
 
 ```{r [intensities] to [pmol]}
-data <- data %>% 
-  mutate(pmol = (standard_input/is_intensity)*intensity) %>% 
+data <- data %>%
+  mutate(pmol = (standard_input / is_intensity) * intensity) %>%
   select(-is_intensity, -intensity)
 ```
 
@@ -188,21 +207,21 @@ data <- data %>%
 
 ```{r sample[pmol] - kon_a[pmol]}
 # create kon_a variable for better reading
-kon_a <- data %>% 
-  filter(samples == "kon_a") %>%  
+kon_a <- data %>%
+  filter(samples == "kon_a") %>%
   select(class, species, kon_a_pmol = pmol)
 
-data <- left_join(data, kon_a, by = c("class", "species")) %>% 
+data <- left_join(data, kon_a, by = c("class", "species")) %>%
   mutate(pmol_corr = pmol - kon_a_pmol,
-         pmol_corr = ifelse(pmol_corr < 0, 0, pmol_corr)) %>% 
-  filter(!str_detect(samples, "kon_a")) %>% 
+         pmol_corr = ifelse(pmol_corr < 0, 0, pmol_corr)) %>%
+  filter(!str_detect(samples, "kon_a")) %>%
   select(-kon_a_pmol)
 ```
 
 #### Convert picomoles to micromolar
 
 ```{r [pmol] to [uM]}
-data <- data %>% 
+data <- data %>%
   mutate(uM = pmol_corr / sample_input)
 ```
 
@@ -213,105 +232,160 @@ data <- data %>%
 ```{r Create Excel wb and set font}
 wb <- createWorkbook()
 modifyBaseFont(wb, fontSize = 10, fontColour = "black", fontName = "Arial")
+```
 
-lipid_class <- unique(data$class)
+## Write meta_data worksheet
 
-for (f in lipid_class) {
+```{r Create meta_data worksheet}
+addWorksheet(wb, "metadata")
+
+setColWidths(wb, "metadata", col = 1:99, widths = 10)
+setRowHeights(wb, "metadata", rows = c(1:99), heights = 15)
   
+writeData(wb, "metadata", meta_data, startCol = 1, startRow = 1)
+```
+
+## Write lipid class-worksheets
+
+```{r Create one worksheet for each lipid class}
+lipid_classes <- unique(data$class)
+
+for (f in lipid_classes) {
+
   addWorksheet(wb, f)
-  setColWidths(wb, f, col=1 , widths = 20)
+
+  setColWidths(wb, f, col = 1, widths = 20)
+  setColWidths(wb, f, col = 2:99, widths = 10)
   setRowHeights(wb, f, rows = 2, heights = 50)
+  setRowHeights(wb, f, rows = c(1, 3:99), heights = 15)
 
-  excel_sum_data <- data %>% 
-    filter(class == f) %>% 
-    select(-species) %>% 
-    group_by(samples, standard_input,sample_input) %>% 
-    summarise("[pmol] before blank sub" = sum(pmol),
-              "[pmol] after blank sub" = sum(pmol_corr),
-              "[uM]" = sum(uM))
-  
-  
-  excel_species_profile <- data %>% 
+  # main-table with sample/meta data and summed micromolar/picomole values
+  excel_sum_data <- data %>%
     filter(class == f) %>%
-    group_by(class, samples) %>% 
-    mutate(uM_sum = sum(uM)) %>% 
-    mutate(mol_percent = uM*100 / sum(uM)) %>% 
-    ungroup %>% 
-    select(samples,species, mol_percent) %>% 
+    group_by(samples, sample_input, standard_input) %>%
+    summarise(sum(pmol),
+              sum(pmol_corr),
+              sum(uM))
+
+  colnames(excel_sum_data) <- c("sample number",
+    paste("sample input [ul]"),
+    paste(f, "IS input [pmol]"),
+    paste(f, "[pmol] before corr"),
+    paste(f, "[pmol] after corr"),
+    paste(f, "[uM]"))
+
+  # summed micromolar-table splitted by diacyl- and ether/acyl-species
+  ether <- data %>%
+  filter(class == f) %>%
+  mutate(ether = str_detect(species, "O-")) %>%
+  group_by(samples, ether) %>%
+  summarise(sum(uM)) %>%
+  pivot_wider(names_from = ether,
+              values_from = "sum(uM)")
+
+  colnames(ether) <- c("sample number",
+                       paste0("a", f, " [uM]"),
+                       if ("TRUE" %in% colnames(ether)) {
+                         paste0("e", f, " [uM]")
+                       }
+                      )
+
+  # mol%-table (lipid species profile)
+  excel_species_profile <- data %>%
+    filter(class == f) %>%
+    group_by(class, samples) %>%
+    mutate(uM_sum = sum(uM)) %>%
+    mutate(mol_percent = uM * 100 / sum(uM),
+           species = str_remove_all(species, f)) %>%
+    ungroup %>%
+    select(samples, species, mol_percent) %>%
     pivot_wider(names_from = species,
-                values_from = mol_percent)
-  
+                values_from = mol_percent) %>%
+    rename(" " = samples)
 
-  species_profile_plot <- data %>% 
-    filter(class == f) %>%
-    group_by(class, samples) %>% 
-    mutate(uM_sum = sum(uM)) %>% 
-    mutate(mol_percent = uM*100 / sum(uM)) %>%
-    ggplot(aes(x = species, 
-               y = mol_percent, 
-               fill = samples)) +
-    geom_col(position=position_dodge())
-    print(species_profile_plot)  
-    
-  writeData(wb, f, as.character(files[f]), startCol = 1, startRow = 1)
-  writeData(wb, f, excel_sum_data, startCol = 2, startRow = 2, rowNames = FALSE)
-  writeData(wb, f, as.character(paste0(f, " mol%")), startCol = 1, startRow = (nrow(excel_sum_data)+5))
-  writeData(wb, f, excel_species_profile, startCol = 1, startRow = (nrow(excel_sum_data)+6))
-  insertPlot(wb, f, width = 5, height = 3.5, fileType = "png", units = "in",startRow = (nrow(excel_sum_data)+nrow(excel_species_profile)))
+  # all-in-one plot
+  print(
+    ggarrange(lipid_barplot(data, f, "species"),
+      ggarrange(lipid_barplot(data, f, "chain_length"),
+                lipid_barplot(data, f, "dbonds"),
+                lipid_barplot(data, f, "oh"),
+                ncol = 3, common.legend = TRUE, legend = "bottom"),
+    nrow = 2, legend = "none")
+  )
+
+  # write previous created df to every sheet via function for better reading
+  # at the end of this fun the printed plot will be inserted to the sheet
+  write_data_to_excelsheet(excel_sum_data,
+                           ether,
+                           excel_species_profile)
 }
+
+```
+
+## Write summary-worksheet for class profile
+
+```{r Create summary-sheet}
+class_order <- c("samples",
+                 "sample_input",
+                 "PC", "ePC",
+                 "LPC",
+                 "SM",
+                 "PE", "ePE",
+                 "PS", "ePS",
+                 "PI", "ePI",
+                 "PG", "ePG",
+                 "PA", "ePA",
+                 "plPE16-0", "PE P-16-0",
+                 "plPE18-1", "PE P-18-1",
+                 "plPE18-0", "PE P-18-0",
+                 "Cer",
+                 "tCer",
+                 "HexCer", "GlcCer",
+                 "Hex2Cer", "LacCer",
+                 "EE",
+                 "SAA", "Ergo",
+                 "CA", "Chol",
+                 "CE",
+                 "DAG",
+                 "TAG",
+                 "sum [uM]",
+                 "sum [pmol]")
+
+excel_class_profile <- data %>%
+  mutate(ether = str_detect(species, "O-")) %>%
+  group_by(class, samples, ether, sample_input) %>%
+  summarise("[uM]" = sum(uM), .groups = "drop") %>%
+  mutate(class = paste0(ether, "_", class),
+         class = str_remove(class, "FALSE_"),
+         class = str_replace(class, "TRUE_", "e")) %>%
+  select(-ether) %>%
+  group_by(samples) %>%
+  mutate("sum [uM]" = sum(`[uM]`),
+         "sum [pmol]" = `sum [uM]` * sample_input) %>%
+  pivot_wider(names_from = "class",
+              values_from = "[uM]") %>%
+  select(class_order[class_order %in% colnames(.)])
+
+
+addWorksheet(wb, "summary")
+
+setColWidths(wb, "summary", col = 1, widths = 20)
+setColWidths(wb, "summary", col = 2:99, widths = 10)
+setRowHeights(wb, "summary", rows = 2, heights = 50)
+setRowHeights(wb, "summary", rows = c(1, 3:99), heights = 15)
+
+writeData(wb, "summary", excel_class_profile, 
+          startCol = 1, startRow = 2, rowNames = FALSE)
+```
+
+## Build the Excel-file
+
+```{r Define Sheet-order and build excel workbook}
+excel_sheet_order <- c("metadata",
+                       class_order[class_order %in% sheets(wb)],
+                       "summary")
+
+worksheetOrder(wb) <- match(excel_sheet_order, sheets(wb))
 
 saveWorkbook(wb, "test.xlsx", overwrite = TRUE)
 ```
-
-
-
-
-
-
-
-data %>%
-  group_by(class, samples) %>% 
-  mutate(uM_sum = sum(uM)) %>% 
-  mutate(species_profile = uM*100 / sum(uM)) %>%
-  ggplot(aes(x = species,
-             y = species_profile,
-             fill = samples)) +
-  geom_col(position=position_dodge())+
-  facet_wrap(~class, scales = "free", ncol = 2)
-
-
-
-
-```{r}
-dir.create("plots", showWarnings = FALSE)
-
-classes <- unique(data$class)
-
-for (f in classes) {
-  plotname <- paste0(f, ".pdf" )
-  
-  pdf(paste0("plots/", plotname ))
-  species_profile_plot <- data %>%
-    filter(class == f) %>% 
-    mutate(uM_sum = sum(uM)) %>% 
-    mutate(species_profile = uM*100 / sum(uM)) %>%
-    ggplot(aes(x = species, 
-               y = species_profile, 
-               fill = samples)) +
-    geom_col(position=position_dodge())+
-    facet_wrap(~class, scales = "free", ncol = 2)
-    print(species_profile_plot)
-    dev.off()
-}
-```
-
-
-
-
-
-
-
-
-
-
-
